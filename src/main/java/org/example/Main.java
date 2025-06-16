@@ -34,20 +34,30 @@ public class Main {
         {
             String path = exchange.getRequestURI().getPath();
             String city = Arrays.asList(path.split("/")).getLast();
-            try {
-                HttpClient client = HttpClient.newHttpClient();
-                HttpRequest request = HttpRequest.newBuilder(new URI("https://wttr.in/"+city+"?format=j1")).build();
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            String value = Redis.checkExists(city);
 
-                exchange.sendResponseHeaders(200, response.body().length());
-                OutputStream os = exchange.getResponseBody();
-                os.write(response.body().getBytes());
-                os.close();
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-                throw new RuntimeException(e);
+            if (value == null){
+                try {
+                    HttpClient client = HttpClient.newHttpClient();
+                    HttpRequest request = HttpRequest.newBuilder(new URI("https://wttr.in/"+city+"?format=j1")).build();
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                    Redis.setValue(city,response.body());
+
+                    exchange.sendResponseHeaders(200, response.body().length());
+                    OutputStream os = exchange.getResponseBody();
+                    os.write(response.body().getBytes());
+                    os.close();
+                    return;
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                    throw new RuntimeException(e);
+                }
             }
 
+            exchange.sendResponseHeaders(200, value.length());
+            OutputStream os = exchange.getResponseBody();
+            os.write(value.getBytes());
+            os.close();
         }
     }
 }
