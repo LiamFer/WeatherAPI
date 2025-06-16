@@ -42,22 +42,21 @@ public class Main {
                     HttpRequest request = HttpRequest.newBuilder(new URI("https://wttr.in/"+city+"?format=j1")).build();
                     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                     Redis.setValue(city,response.body());
-
-                    exchange.sendResponseHeaders(200, response.body().length());
-                    OutputStream os = exchange.getResponseBody();
-                    os.write(response.body().getBytes());
-                    os.close();
+                    sendResponse(exchange,response.body());
                     return;
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
                     throw new RuntimeException(e);
                 }
             }
-
-            exchange.sendResponseHeaders(200, value.length());
-            OutputStream os = exchange.getResponseBody();
-            os.write(value.getBytes());
-            os.close();
+            sendResponse(exchange,value);
         }
+    }
+
+    public static void sendResponse(HttpExchange exchange,String value) throws IOException {
+        exchange.sendResponseHeaders(200, value.length());
+        OutputStream os = exchange.getResponseBody();
+        os.write(value.getBytes());
+        os.close();
     }
 }
